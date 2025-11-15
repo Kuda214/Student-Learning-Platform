@@ -127,8 +127,19 @@ export const Assessment: React.FC<AssessmentProps> = ({ username }) => {
     setLoadingQuestions(true);
     setFetchError(null);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list_observer_questions`; // ensure correct deployment path
-      const res = await fetch(url, { headers: { Accept:'application/json' } });
+      // const url = `${import.meta.env.VITE_SUPABASE_URL}/list_observer_questions-ts`; // ensure correct deployment path
+      
+       const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/list_observer_questions-ts`,
+      {
+        method: 'GET',
+        headers: {
+           //apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          // Optional: only if function checks it
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+      }
+    );
       if (!res.ok) throw new Error(`Failed to load questions (${res.status})`);
       const data = await res.json();
       const loaded: ObserverQuestion[] = data.questions;
@@ -177,63 +188,54 @@ export const Assessment: React.FC<AssessmentProps> = ({ username }) => {
   };
 
   /* ---------------- Submit & Grade (fetch answers) ---------------- */
-  const handleSubmitAssessment = async () => {
-    setGrading(true);
+const handleSubmitAssessment = async () => {
+  setGrading(true);
 
-    try {
-      // 1. Get answer key (real call — keeps UI accurate)
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/list_observer_questions?showAnswers=true`;
-      const res = await fetch(url, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error(`Failed to load answers (${res.status})`);
-      const { questions: answerKey } = await res.json();
-      const keyMap = new Map(answerKey.map((q:ObserverQuestion) => [q.id, q]));
+  try {
+    // This variant does NOT call any network endpoint.
+    // It grades using the locally-available `questions` array.
+    // If a question does not include the expected answer data, we mark it "cannot grade".
+    let correctCount = 0;
+    const adviceMap: Record<number, string> = {};
 
-      // 2. Grade locally + build advice
-      let correctCount = 0;
-      const adviceMap: Record<number,string> = {};
+    questions.forEach(q => {
+      const ua = userAnswers[q.id];
 
-      questions.forEach(q => {
-        const full = keyMap.get(q.id);
-        if (!full) return;
-        const ua = userAnswers[q.id];
-        const correct = isQuestionCorrect(full, ua);
-        if (correct) {
-          correctCount++;
-          adviceMap[q.id] = 'Great job! Your answer matches the expected solution.';
-        } else {
-          adviceMap[q.id] = generateAdvice(full, ua);
-        }
-      });
+      // Detect if the question has the answer data required for grading.
+      // Adjust the property check below to match your question shape (e.g. q.answer, q.correctAnswer, q.solution, etc.)
+      const hasAnswerData = q && (q.answer !== undefined || q.correctAnswer !== undefined || q.solution !== undefined);
 
-      const total = questions.length;
-      const pct = Math.round((correctCount / total) * 100);
-      const elapsed = timeStarted ? Math.floor((Date.now() - timeStarted) / 1000) : 0;
+      if (!hasAnswerData) {
+        adviceMap[q.id] = 'Correct answer not available — this question could not be automatically graded.';
+        return;
+      }
 
-      // 3. Fake save (unchanged)
-      console.log('%c[FAKE SUBMIT] Assessment saved', 'color:#10b981;font-weight:bold;', {
-        user: username,
-        score: correctCount,
-        total,
-        percentage: pct,
-        time_spent_seconds: elapsed
-      });
-      await new Promise(r => setTimeout(r, 600));
+      const correct = isQuestionCorrect(q, ua);
+      if (correct) {
+        correctCount++;
+        adviceMap[q.id] = 'Great job! Your answer matches the expected solution.';
+      } else {
+        adviceMap[q.id] = generateAdvice(q, ua);
+      }
+    });
 
-      // 4. Update UI
-      setScore(correctCount);
-      setPercentage(pct);
-      setTimeSpent(elapsed);
-      setQuestions(answerKey);         // replace with enriched (answers)
-      setQuestionAdvice(adviceMap);    // ADDED
-      setShowSummary(true);
+    const total = questions.length;
+    const pct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+    const elapsed = timeStarted ? Math.floor((Date.now() - timeStarted) / 1000) : 0;
 
-    } catch (e: any) {
-      alert(e.message || 'Grading failed');
-    } finally {
-      setGrading(false);
-    }
-  };
+    // Update UI/report state (no network calls)
+    setScore(correctCount);
+    setPercentage(pct);
+    setTimeSpent(elapsed);
+    setQuestionAdvice(adviceMap);
+    setShowSummary(true);
 
+  } catch (e: any) {
+    alert(e?.message || 'Grading failed');
+  } finally {
+    setGrading(false);
+  }
+};
   /* ---------------- Restart ---------------- */
   const handleRestart = () => {
     setStarted(false);
