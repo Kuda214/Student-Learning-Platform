@@ -79,7 +79,7 @@ const MenuBar = ({ mode, setMode }) => {
 
         {/* Profile/Settings Icon */}
         <Button
-          // onClick={() => alert('Profile feature coming soon!')}
+          onClick={() => alert('Profile feature coming soon!')}
           className="text-gray-700 bg-transparent hover:bg-blue-50"
         >
           <User className="w-6 h-6" />
@@ -90,5 +90,3 @@ const MenuBar = ({ mode, setMode }) => {
 };
 
 export default MenuBar;
-
-

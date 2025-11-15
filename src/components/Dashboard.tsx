@@ -314,10 +314,6 @@ export const Dashboard: React.FC = () => {
     return slice.length ? Math.round(slice.reduce((sum, a) => sum + a.score, 0) / slice.length) : 0;
   }, [history]);
 
-  // const startAssessment = () => alert('TODO: Navigate to assessment start');
-  // const shareAchievements = () => alert('TODO: Share achievements');
-  // const downloadAggregateReport = () => alert('TODO: Download aggregated performance PDF');
-
   if (loading) {
     return (
       <div style={{
@@ -374,7 +370,6 @@ export const Dashboard: React.FC = () => {
           </p>
         </div>
         <ActionButton
-          onClick={startAssessment}
           style={{
             background: palette.success,
             color: '#fff',
@@ -461,10 +456,10 @@ export const Dashboard: React.FC = () => {
                   Earn XP via assessments, improvements & streak continuity.
                 </div>
                 <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-                  <ActionButton onClick={startAssessment} style={{ background: palette.success }}>
+                  <ActionButton  style={{ background: palette.success }}>
                     <BookOpen size={16} /> Assess
                   </ActionButton>
-                  <ActionButton onClick={shareAchievements} style={{ background: palette.warn }}>
+                  <ActionButton  style={{ background: palette.warn }}>
                     <Share2 size={16} /> Share
                   </ActionButton>
                 </div>
@@ -478,7 +473,7 @@ export const Dashboard: React.FC = () => {
           <Panel style={{ marginTop: 40 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: palette.text }}>Recent Assessments</h3>
-              <ActionButton onClick={downloadAggregateReport} style={{ background: palette.accent }}>
+              <ActionButton style={{ background: palette.accent }}>
                 <Shield size={16} /> Report
               </ActionButton>
             </div>
@@ -520,7 +515,7 @@ export const Dashboard: React.FC = () => {
                             borderRadius: 6,
                             cursor: 'pointer'
                           }}
-                          // onClick={() => alert(`Open detailed report for #${item.id}`)}
+                         
                         >
                           View
                         </button>
