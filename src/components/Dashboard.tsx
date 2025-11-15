@@ -314,9 +314,9 @@ export const Dashboard: React.FC = () => {
     return slice.length ? Math.round(slice.reduce((sum, a) => sum + a.score, 0) / slice.length) : 0;
   }, [history]);
 
-  const startAssessment = () => alert('TODO: Navigate to assessment start');
-  const shareAchievements = () => alert('TODO: Share achievements');
-  const downloadAggregateReport = () => alert('TODO: Download aggregated performance PDF');
+  // const startAssessment = () => alert('TODO: Navigate to assessment start');
+  // const shareAchievements = () => alert('TODO: Share achievements');
+  // const downloadAggregateReport = () => alert('TODO: Download aggregated performance PDF');
 
   if (loading) {
     return (
@@ -520,7 +520,7 @@ export const Dashboard: React.FC = () => {
                             borderRadius: 6,
                             cursor: 'pointer'
                           }}
-                          onClick={() => alert(`Open detailed report for #${item.id}`)}
+                          // onClick={() => alert(`Open detailed report for #${item.id}`)}
                         >
                           View
                         </button>

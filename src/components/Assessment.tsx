@@ -359,7 +359,6 @@ export const Assessment: React.FC<AssessmentProps> = ({ username }) => {
       setQuestionAdvice(adviceMap);
       setShowSummary(true);
     } catch (e: any) {
-      alert(e?.message || 'Grading failed');
     } finally {
       setGrading(false);
     }
