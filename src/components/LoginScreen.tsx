@@ -89,7 +89,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Try 'student1' or 'instructor'"
+                  // placeholder="Try 'student1' or 'instructor'"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -101,7 +101,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Any password"
+                  // placeholder="Any password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
