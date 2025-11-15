@@ -90,3 +90,5 @@ const MenuBar = ({ mode, setMode }) => {
 };
 
 export default MenuBar;
+
+
