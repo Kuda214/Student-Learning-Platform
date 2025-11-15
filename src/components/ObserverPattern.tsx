@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Bell, User, Play, RotateCcw, Code2, Eye, ArrowRight, ArrowLeft, Zap, Orbit } from 'lucide-react'; // Changed Toggle icons to Zap/Orbit for better theming
+import { Bell, User, Play, RotateCcw, Code2, Eye, ArrowRight, ArrowLeft, Zap, Orbit, Youtube, Volume2, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence, color } from 'framer-motion'; // Assuming motion/react is framer-motion based on the syntax
 import { UMLDiagram } from './UMLDiagram';
 
@@ -14,11 +14,228 @@ interface Observer {
   showCode: boolean;
 }
 
+interface Video {
+  id: string;
+  title: string;
+  youtubeId: string;
+  duration: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  description: string;
+}
+
+
+
+
+const cppObserverExample = `#include <iostream>
+#include <vector>
+using namespace std;
+
+class Observer {
+public:
+    virtual void update(string message) = 0;
+};
+
+class ConcreteObserver : public Observer {
+    string name;
+public:
+    ConcreteObserver(string n) : name(n) {}
+    void update(string message) override {
+        cout << name << " received: " << message << endl;
+    }
+};
+
+class Subject {
+    vector<Observer*> observers;
+public:
+    void attach(Observer* obs) { observers.push_back(obs); }
+    void notify(string msg) {
+        for (auto obs : observers) obs->update(msg);
+    }
+};
+
+int main() {
+    Subject subject;
+    ConcreteObserver obs1("Observer1"), obs2("Observer2");
+    subject.attach(&obs1);
+    subject.attach(&obs2);
+    subject.notify("Hello Observers!");
+    return 0;
+}`;
+
+
 // Helper to calculate top position for the animated dots
 const getTopPosition = (i: number) => {
   // Base position + offset per observer (3rem base height, 6rem spacing)
   return 3 * 16 + i * 6 * 16; // Convert rem to pixels (assuming 16px/rem)
 };
+
+
+
+
+// === Video Learning Card Component ===
+function VideoLearningCard() {
+  const [selectedVideoIdx, setSelectedVideoIdx] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const videos: Video[] = [
+    {
+      id: '1',
+      title: 'Observer Design Pattern in C++',
+      youtubeId: '8QJu74iW9Xk',
+      duration: '5:47',
+      difficulty: 'Fundamental',
+      description: 'In this video, we explore the Observer Design Pattern in C++ — one of the most powerful and commonly used behavioral design patterns.',
+    },
+    {
+      id: '2',
+      title: 'Loose vs Tight Coupling',
+      youtubeId: 'uWseUdUqM5U',
+      duration: '5:36',
+      difficulty: 'Intermediate',
+      description: 'Loose vs Tight coupling explained in Software engineering with examples.',
+    },
+    {
+      id: '3',
+      title: 'Observer Pattern Real-life examples',
+      youtubeId: 'wiQdrH2YpT4',
+      duration: '9:11',
+      difficulty: 'Fundamental',
+      description: 'Implementing the Observer pattern and seeing its use in a real life example',
+    },
+  ];
+
+  const currentVideo = videos[selectedVideoIdx];
+  const difficultyColor = {
+    Beginner: 'bg-green-100 text-green-800',
+    Intermediate: 'bg-yellow-100 text-yellow-800',
+    Advanced: 'bg-red-100 text-red-800',
+  };
+
+  return (
+    <Card className="shadow-lg border-t-1 border-t-purple-400">
+      <CardTitle className="text-2xl text-purple-900 p-6">Video Learning Resources</CardTitle>
+      <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-400 text-white">
+        <div className="flex items-center gap-2">
+          <Youtube className="w-6 h-6" />
+          <div>
+            <CardTitle className="text-xl text-blue-900">Learn More with Videos</CardTitle>
+            <CardDescription className="text-blue-900">
+              Watch curated videos to deepen your understanding
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="px-6 py-7 space-y-9">
+
+
+        {/* Video Player */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative w-full bg-black rounded-lg overflow-hidden h-[650px]"
+        >
+          <iframe
+            width="800px"
+            height="350px"
+            src={`https://www.youtube.com/embed/${currentVideo.youtubeId}?autoplay=${isPlaying ? 1 : 0}`}
+            title={currentVideo.title}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full"
+          />
+        </motion.div>
+
+
+
+        {/* Video Info */}
+        <motion.div
+          key={selectedVideoIdx}
+          initial={{ opacity: 0, y: 0.95 }}
+          animate={{ opacity: 1, y: 1 }}
+          className="space-y-2"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg text-blue-900" >{currentVideo.title}</h3>
+              <p className="text-sm text-gray-600 mt-1" style={{paddingTop:'15px'}}>{currentVideo.description}</p>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${difficultyColor[currentVideo.difficulty]}`}>
+              {currentVideo.difficulty}
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 flex items-center gap-1" >
+            <Volume2 className="w-3 h-3" />
+            Duration: {currentVideo.duration}
+          </p>
+        </motion.div>
+
+        {/* Video List */}
+        <div className="space-y-2" style={{paddingTop:'25px'}}>
+          <Label className="text-blue-900 font-semibold flex items-center gap-2">
+            <BookOpen className="w-4 h-4" />
+            Available Videos
+          </Label>
+          <div className="grid gap-2 max-h-64 overflow-y-auto">
+            {videos.map((video, idx) => (
+              <motion.button
+                key={video.id}
+                whileHover={{ x: 4 }}
+                onClick={() => {
+                  setSelectedVideoIdx(idx);
+                  setIsPlaying(true);
+                }}
+                className={`p-3 rounded-lg text-left transition-all ${
+                  idx === selectedVideoIdx
+                    ? 'bg-purple-100 border-2 border-purple-500 shadow-md'
+                    : 'bg-gray-50 border-2 border-gray-200 hover:border-purple-300'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-gray-900 truncate">{video.title}</p>
+                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                      <span className="inline-block">▶</span>
+                      {video.duration}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap ${
+                    difficultyColor[video.difficulty]
+                  }`}>
+                    {video.difficulty}
+                  </span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2">
+          <Button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            {isPlaying ? 'Pause' : 'Play'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => window.open(`https://www.youtube.com/watch?v=${currentVideo.youtubeId}`, '_blank')}
+            className="flex-1 border-purple-300 text-purple-600 hover:bg-purple-50"
+          >
+            Watch on YouTube
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+
+
 
 // === Push/Pull Demo Component (Extracted & Enhanced) ===
 // === Push/Pull Demo Component (Fixed) ===
@@ -185,6 +402,7 @@ export function ObserverPattern() {
     { id: 3, name: 'SMS Service', notified: false, showCode: false },
   ]);
   const [newObserverName, setNewObserverName] = useState('');
+  const [showParticipantsCode, setShowParticipantsCode] = useState(false);
   const [subjectState, setSubjectState] = useState('Idle');
   const [isAnimating, setIsAnimating] = useState(false);
   const [showSubjectCode, setShowSubjectCode] = useState(false);
@@ -277,7 +495,7 @@ export function ObserverPattern() {
 
   const concepts = [
     {
-      title: 'Concept 1: The Basic Observer Pattern',
+      title: 'The Basic Observer Pattern',
       description:
         'The Observer pattern defines a one-to-many dependency between objects. When the subject changes state, all observers are notified automatically.',
       howItWorks: [
@@ -290,7 +508,18 @@ export function ObserverPattern() {
       ],
     },
     {
-      title: 'Concept 2: Push vs. Pull',
+      title: 'Observer Pattern Participants',
+      description:
+        'The Observer pattern participants include the subject, observers, Concrete subjects and Concrete observers.',
+      howItWorks: [
+        '• The Subject: Maintains a list of observers and notifies them on state changes',
+        '• The Observer: Defines an interface for objects that should be notified of changes',
+        '• The ConcreteSubject: Implements the Subject interface and stores state of interest',
+        '• The ConcreteObserver: Implements the Observer interface and maintains a reference to a ConcreteSubject object',
+      ],
+    },
+    {
+      title: 'Push vs. Pull',
       description:
         'How do observers get data? Does the Subject send it (Push), or do Observers ask for it (Pull)?',
       howItWorks: [
@@ -302,7 +531,7 @@ export function ObserverPattern() {
       ],
     },
     {
-      title: 'Concept 3: Real-World Example (Event Listeners)',
+      title: 'Real-World Example (Event Listeners)',
       description:
         'The Observer pattern is the foundation for event handling in browsers.',
       howItWorks: [
@@ -326,6 +555,93 @@ export function ObserverPattern() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main Content - Left Side */}
       <div className="lg:col-span-2 space-y-6">
+
+
+
+        {/* Dynamic Concept Card */}
+        <Card className="text-black border-t-1 shadow-lg">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-2xl text-blue-900">Understanding the Observer Pattern</CardTitle>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={prevConcept}
+                  className="text-blue-900 hover:bg-blue-50"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={nextConcept}
+                  className="text-blue-900 hover:bg-blue-50"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentConcept}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4 }}
+            >
+              <CardContent className="space-y-2">
+                <CardTitle className="text-lg">{concepts[currentConcept].title}</CardTitle>
+                <p className="" style={{color:'#8c848c'}}>{concepts[currentConcept].description}</p>
+                <div className="space-y-1 text-sm" style={{paddingTop:'13px'}}>
+                  {concepts[currentConcept].howItWorks.map((line, idx) => (
+                    <p
+                      key={idx}
+                      className={line.includes('Switch') ? 'font-semibold text-orange-600' : ''}
+                    >
+                      {line}
+                    </p>
+                  ))}
+
+                  {/* --- Observer Participants See Code Button --- */}
+                  {concepts[currentConcept].title === 'Observer Pattern Participants' && (
+                    <div className="mt-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowParticipantsCode(!showParticipantsCode)}
+                        className="mb-2"
+                      >
+                        <Code2 className="w-4 h-4 ml-2" />
+                        {showParticipantsCode ? 'Hide Code' : 'Show Code'}
+            
+                      </Button>
+
+                      {showParticipantsCode && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="bg-slate-900 text-green-400 rounded-lg p-6 overflow-x-auto"
+                        >
+                          <pre className="text-xs">
+                            <code>{cppObserverExample}</code>
+                          </pre>
+                        </motion.div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </motion.div>
+          </AnimatePresence>
+        </Card>
+
+
+
+
         <Card className="shadow-lg border-t-1">
           <CardHeader className="bg-gradient-to-r from-blue-900 to-blue-700 text-white">
             <div className="flex justify-between items-center">
@@ -588,59 +904,14 @@ export function ObserverPattern() {
           </CardContent>
         </Card>
 
-        {/* Dynamic Concept Card */}
-        <Card className="text-black border-t-1 border-orange-500 shadow-lg">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-black">{concepts[currentConcept].title}</CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={prevConcept}
-                  className="text-blue-900 hover:bg-blue-50"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={nextConcept}
-                  className="text-blue-900 hover:bg-blue-50"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentConcept}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.4 }}
-            >
-              <CardContent className="space-y-2">
-                <p className="font-medium">{concepts[currentConcept].description}</p>
-                <div className="space-y-1 text-sm">
-                  {concepts[currentConcept].howItWorks.map((line, idx) => (
-                    <p key={idx} className={line.includes('Switch') ? 'font-semibold text-orange-600' : ''}>
-                      {line}
-                    </p>
-                  ))}
-                </div>
-              </CardContent>
-            </motion.div>
-          </AnimatePresence>
-        </Card>
+        
+        <VideoLearningCard />
       </div>
 
       {/* UML Diagram - Right Side */}
-      <div className="lg:col-span-1 border-t-1">
+      <div className="lg:col-span-1 border-t-1 ">
         <div className="sticky top-4">
-          <UMLDiagram />
+          <UMLDiagram className="shadow-lg border-t-1" />
         </div>
       </div>
     </div>
