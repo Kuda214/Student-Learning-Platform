@@ -56,6 +56,9 @@
       },
       "scripts": {
             "dev": "vite",
-            "build": "vite build"
+            "build": "npm ci && vite build",
+            "preview": "vite preview"
       }
 }
+
+
