@@ -63,16 +63,14 @@ int main() {
 }`;
 
 
-// Helper to calculate top position for the animated dots
 const getTopPosition = (i: number) => {
-  // Base position + offset per observer (3rem base height, 6rem spacing)
-  return 3 * 16 + i * 6 * 16; // Convert rem to pixels (assuming 16px/rem)
+
+  return 3 * 16 + i * 6 * 16; 
 };
 
 
 
 
-// === Video Learning Card Component ===
 function VideoLearningCard() {
   const [selectedVideoIdx, setSelectedVideoIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -237,10 +235,6 @@ function VideoLearningCard() {
 
 
 
-// === Push/Pull Demo Component (Extracted & Enhanced) ===
-// === Push/Pull Demo Component (Fixed) ===
-// === Push/Pull Demo Component (FIXED for Alignment and Travel) ===
-// === Push/Pull Demo Component (FINAL ALIGNMENT FIX) ===
 function PushPullDemo() {
   const [mode, setMode] = useState<'push' | 'pull'>('push');
   const [trigger, setTrigger] = useState(0);
@@ -249,14 +243,7 @@ function PushPullDemo() {
   const animationDuration = 2.4;
   const travelDistance = 280; // Distance in pixels
 
-  // FIX: This calculation now perfectly centers the 3px dot vertically within the 48px tall Observer box.
   const getTopPosition = (i: number) => {
-    // 1. Base offset for the top of the entire Obs stack within the h-48 (192px) flex container.
-    // 2. Center of the first Obs box (48px / 2 = 24px).
-    // 3. Spacing between centers (h-12 + gap-6) = 48px + 24px = 72px.
-    // 4. Subtract 6px to center the 3x3 dot (dot center needs to be 1.5px above the line; 3px dot means 1.5px below center for the 'top' style).
-    
-    // Optimized vertical top offset: 46px (This aligns the top of the dot)
     const baseTopOffset = 30; 
     const spacing = 55; // 48px (h-12) + 24px (gap-6)
     

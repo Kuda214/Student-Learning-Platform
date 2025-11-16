@@ -17,17 +17,12 @@ export function MainContent({ username, onLogout }: MainContentProps) {
     setActiveTab(mode);
   };
 
-  // LOGOUT LOGIC — Runs when user clicks Logout
   const handleLogout = () => {
-    // 1. Clear auth data
     localStorage.removeItem('authToken');
     localStorage.removeItem('username');
-    // Add more keys if needed: session, userId, etc.
 
-    // 2. Call parent onLogout (e.g. to reset auth state)
     onLogout();
 
-    // 3. Redirect to login
     window.location.href = '/'; // Change if your login page is different
   };
 
