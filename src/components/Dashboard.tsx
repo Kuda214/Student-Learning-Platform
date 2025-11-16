@@ -56,6 +56,10 @@ type BadgeProgress = {
   progressPct: number;
 };
 
+interface User {
+  username: string;
+  role?: string;
+}
 /* ------------------------------------------------------------------
    Mock Fetchers (swap with real API)
 ------------------------------------------------------------------- */
@@ -290,6 +294,7 @@ export const Dashboard: React.FC = () => {
   const [history, setHistory] = useState<AssessmentHistoryItem[]>([]);
   const [badges, setBadges] = useState<BadgeProgress[]>([]);
   const [loading, setLoading] = useState(true);
+const [localUser, setLocalUser] = useState<User | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -363,6 +368,7 @@ export const Dashboard: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: '70%'}}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <GraduationCap size={28} />
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Hi Kuda!</h1>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Keep Momentum!</h1>
           </div>
           <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
