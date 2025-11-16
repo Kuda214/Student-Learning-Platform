@@ -28,7 +28,7 @@ export function MainContent({ username, onLogout }: MainContentProps) {
     onLogout();
 
     // 3. Redirect to login
-    window.location.href = '/login'; // Change if your login page is different
+    window.location.href = '/'; // Change if your login page is different
   };
 
   return (
