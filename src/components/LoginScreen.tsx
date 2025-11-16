@@ -34,7 +34,10 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
 
   // Show Teacher Dashboard if logged in as instructor
   if (localUser?.username.toLowerCase() === 'instructor') {
-    return <TeacherDashboard user={localUser} />;
+    return <TeacherDashboard onLogout={() => {
+      localStorage.clear();
+      window.location.href = '/login';
+    }} />;
   }
 
   // Otherwise, show login form

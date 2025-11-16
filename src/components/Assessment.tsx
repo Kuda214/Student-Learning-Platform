@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import './AssessmentStart.css';
+import { DragAndDropQuestion } from './ui/DragAndDropQuestion';
 
 /* ------------------------------------------------------------------
    Types from Edge Function
@@ -27,25 +28,31 @@ type QuestionOption = {
   is_correct?: boolean;
 };
 
+const CATEGORIES = ['Tightly Coupled', 'Loosely Coupled'] as const;
+
 type ObserverQuestion = {
   id: number;
-  type: 'multiple_choice' | 'fill_in_blank' | 'code' | 'multi_select_issue' | 'concept';
+  type: 'multiple_choice' | 'fill_in_blank' | 'code' | 'multi_select_issue' | 'concept' | 'drag_drop';
   text: string;
   image_url: string | null;
   audio_url: string | null;
   code_snippet: string | null;
   learning_objectives: string[];
   options: QuestionOption[];
-  correct_answer: string | number | number[] | null;
+  correct_answer: string | number | number[] | null; // for drag_drop, correct_answer = number[] (index order)
   created_at: string;
 };
+
 
 type UserAnswer =
   | { type: 'multiple_choice'; selectedIndex: number | null }
   | { type: 'fill_in_blank'; text: string }
   | { type: 'code'; text: string }
   | { type: 'multi_select_issue'; selectedIndices: number[] }
-  | { type: 'concept'; selectedIndex: number | null };
+  | { type: 'concept'; selectedIndex: number | null }
+  | { type: 'drag_drop'; categories: Record<'source' | 'Tightly Coupled' | 'Loosely Coupled', number[]> };
+
+
 
 /* ------------------------------------------------------------------
    Helper Functions (Outside Component Scope)
@@ -61,6 +68,22 @@ function formatUserAnswer(q: ObserverQuestion, ua: UserAnswer | undefined): stri
     case 'concept':
       return ua.selectedIndex !== null ? q.options[ua.selectedIndex]?.text || '' : 'Not answered';
     case 'fill_in_blank':
+    case 'drag_drop': {
+      if (!('categories' in ua)) return 'Not answered';
+      const cats = ua.categories;
+      const formatCat = (cat: string) =>
+        (cats[cat] || [])
+          .map(id => {
+            const opt = q.options.find(o => o.id === id);
+            return opt ? `• ${escapeHTML(opt.text)}` : '';
+          })
+          .join('<br>') || '<em>None</em>';
+
+      return `
+        <strong>Tightly Coupled:</strong><br>${formatCat('Tightly Coupled')}<br><br>
+        <strong>Loosely Coupled:</strong><br>${formatCat('Loosely Coupled')}
+      `.trim();
+    }
     case 'code':
       return ua.text || 'Not answered';
     case 'multi_select_issue':
@@ -74,6 +97,25 @@ function formatCorrectAnswer(q: ObserverQuestion): string {
   if (q.correct_answer === null || q.correct_answer === undefined) return 'N/A';
   if (typeof q.correct_answer === 'string') return q.correct_answer;
   if (typeof q.correct_answer === 'number') return q.options[q.correct_answer]?.text || '';
+  if (q.type === 'drag_drop' && Array.isArray(q.correct_answer)) {
+    const map: Record<string, number[]> = {};
+    q.correct_answer.forEach((item: any) => {
+      map[item.category] = item.indices;
+    });
+
+    const formatCat = (cat: string) =>
+      (map[cat] || [])
+        .map(i => {
+          const opt = q.options[i];
+          return opt ? `• ${escapeHTML(opt.text)}` : '';
+        })
+        .join('<br>') || '<em>None</em>';
+
+    return `
+      <strong>Tightly Coupled:</strong><br>${formatCat('Tightly Coupled')}<br><br>
+      <strong>Loosely Coupled:</strong><br>${formatCat('Loosely Coupled')}
+    `.trim();
+  }
   if (Array.isArray(q.correct_answer)) {
     return q.correct_answer.map((i: number) => q.options[i]?.text || '').join(', ');
   }
@@ -96,6 +138,23 @@ function isQuestionCorrect(q: ObserverQuestion, ua: UserAnswer | undefined): boo
       const correctSet = new Set(q.correct_answer as number[]);
       return userSet.size === correctSet.size && [...correctSet].every(idx => userSet.has(idx));
     }
+    
+    case 'drag_drop': {
+      if (!('categories' in ua) || !Array.isArray(q.correct_answer)) return false;
+
+      const userCats = ua.categories;
+      const correctMap = q.correct_answer.reduce((acc: any, item: any) => {
+        acc[item.category] = item.indices;
+        return acc;
+      }, {} as Record<string, number[]>);
+
+      return CATEGORIES.every(cat => {
+        const user = (userCats[cat] || []).sort((a: number, b: number) => a - b);
+        const correct = (correctMap[cat] || []).sort((a: number, b: number) => a - b);
+        return user.length === correct.length && user.every((v, i) => v === correct[i]);
+      });
+    }
+
   }
   return false;
 }
@@ -159,6 +218,19 @@ function buildStudyBlocks(all: ObserverQuestion[], answers: Record<number, UserA
     </ul>
   </div>`;
 }
+
+const getFocusAreas = (qs: ObserverQuestion[], ans: Record<number, UserAnswer>) => {
+  const map = new Map<string, number>();
+  qs.forEach(q => {
+    if (!isQuestionCorrect(q, ans[q.id])) {
+      q.learning_objectives.forEach(o => map.set(o, (map.get(o) ?? 0) + 1));
+    }
+  });
+  return [...map.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([o, c]) => `${o} <em>(missed ${c} time${c > 1 ? 's' : ''})</em>`);
+};
 
 /* ------------------------------------------------------------------
    UI Stubs
@@ -263,6 +335,17 @@ export const Assessment: React.FC<AssessmentProps> = ({ username }) => {
           case 'multi_select_issue':
             init[q.id] = { type: q.type, selectedIndices: [] };
             break;
+          case 'drag_drop':
+          init[q.id] = {
+            type: 'drag_drop',
+            categories: {
+              source: q.options.map(o => o.id),
+              'Tightly Coupled': [],
+              'Loosely Coupled': []
+            }
+          };
+          break;
+
         }
       });
       setUserAnswers(init);
@@ -384,27 +467,46 @@ export const Assessment: React.FC<AssessmentProps> = ({ username }) => {
   };
 
   const downloadReport = () => {
-    const date = new Date().toLocaleDateString();
-    const detailedRows = questions.map((q, idx) => {
-      const ua = userAnswers[q.id];
-      const userAns = formatUserAnswer(q, ua);
-      const correctDisp = formatCorrectAnswer(q);
-      const correct = isQuestionCorrect(q, ua);
-      const advice = questionAdvice[q.id] || (correct ? 'Correct.' : 'Review this concept.');
+  const date = new Date().toLocaleDateString();
 
-      return `<tr class="${correct ? 'correct-row' : 'incorrect-row'}">
-        <td>${idx + 1}</td>
-        <td>${escapeHTML(q.text)}</td>
-        <td>${escapeHTML(userAns)}</td>
-        <td>${escapeHTML(correctDisp)}</td>
-        <td>${correct ? 'Correct' : 'Incorrect'}</td>
-        <td>${escapeHTML(advice)}</td>
-      </tr>`;
-    }).join('');
+  // === NEW: Compute focus areas for PDF ===
+  const focusMap = new Map<string, number>();
+  questions.forEach(q => {
+    const ua = userAnswers[q.id];
+    if (!isQuestionCorrect(q, ua)) {
+      q.learning_objectives.forEach(obj => {
+        focusMap.set(obj, (focusMap.get(obj) ?? 0) + 1);
+      });
+    }
+  });
+  const focusItems = [...focusMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([obj, cnt]) => `<li><strong>${escapeHTML(obj)}</strong> (missed ${cnt} time${cnt > 1 ? 's' : ''})</li>`)
+    .join('');
+  const focusHTML = focusItems
+    ? `<div class="sub"><h3>Focus on</h3><ul>${focusItems}</ul></div>`
+    : '';
 
-    const studyBlocks = buildStudyBlocks(questions, userAnswers, percentage);
+  const detailedRows = questions.map((q, idx) => {
+    const ua = userAnswers[q.id];
+    const userAns = formatUserAnswer(q, ua);
+    const correctDisp = formatCorrectAnswer(q);
+    const correct = isQuestionCorrect(q, ua);
+    const advice = questionAdvice[q.id] || (correct ? 'Correct.' : 'Review this concept.');
+    return `<tr class="${correct ? 'correct-row' : 'incorrect-row'}">
+      <td>${idx + 1}</td>
+      <td>${escapeHTML(q.text)}</td>
+      <td>${escapeHTML(userAns)}</td>
+      <td>${escapeHTML(correctDisp)}</td>
+      <td>${correct ? 'Correct' : 'Incorrect'}</td>
+      <td>${escapeHTML(advice)}</td>
+    </tr>`;
+  }).join('');
 
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8" />
+  const studyBlocks = buildStudyBlocks(questions, userAnswers, percentage);
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8" />
 <title>Observer Pattern Assessment Report</title>
 <style>
 body{font-family:System-ui,Segoe UI,Roboto,sans-serif;background:#f8fafc;color:#1f2937;margin:40px;}
@@ -422,6 +524,8 @@ tr.incorrect-row{background:#fef2f2;}
 .footer{text-align:center;margin-top:40px;font-size:12px;color:#64748b;}
 a{color:#1e3a8a;text-decoration:none;}
 a:hover{text-decoration:underline;}
+.sub h3{margin:16px 0 8px;font-size:16px;color:#1e40af;}
+.sub ul{margin:0;padding-left:20px;}
 </style>
 </head>
 <body>
@@ -436,7 +540,6 @@ a:hover{text-decoration:underline;}
   </div>
   <p>${performanceMessageText(percentage)}</p>
 </div>
-
 <div class="section">
   <h2>Detailed Question Analysis & Advice</h2>
   <table>
@@ -445,23 +548,24 @@ a:hover{text-decoration:underline;}
   </table>
 </div>
 
-${studyBlocks}
+${focusHTML}
 
+${studyBlocks}
 <div class="footer">
  Generated ${new Date().toLocaleString()} • Observer Pattern Learning Platform
 </div>
 </body></html>`;
 
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Observer_Assessment_Report_${username}_${date.replace(/\//g, '-')}.html`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Observer_Assessment_Report_${username}_${date.replace(/\//g, '-')}.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
 
   const currentQuestion = questions[currentIndex];
   const progress = questions.length ? ((currentIndex + 1) / questions.length) * 100 : 0;
@@ -478,6 +582,8 @@ ${studyBlocks}
         return ua.text.trim().length > 0;
       case 'multi_select_issue':
         return ua.selectedIndices.length > 0;
+      case 'drag_drop':
+        return 'categories' in ua && ua.categories.source.length === 0; // All items moved
     }
   });
 
@@ -734,6 +840,10 @@ ${studyBlocks}
         return a.text.trim().length > 0;
       case 'multi_select_issue':
         return a.selectedIndices.length > 0;
+      case 'drag_drop':
+        return 'categories' in a && a.categories.source.length === 0;
+      default:
+        return false;
     }
   }).length;
 
@@ -856,6 +966,15 @@ ${studyBlocks}
             </div>
           )}
 
+          {currentQuestion.type === 'drag_drop' && (
+            <DragAndDropQuestion
+              question={currentQuestion}
+              answer={ua}
+              updateAnswer={(payload) => updateAnswer(currentQuestion, payload)}
+            />
+          )}
+
+
           <div className="flex justify-between pt-4">
             <Button
               variant="outline"
@@ -895,10 +1014,17 @@ ${studyBlocks}
                 if (!a) return false;
                 switch (a.type) {
                   case 'multiple_choice':
-                  case 'concept': return a.selectedIndex !== null;
+                  case 'concept':
+                    return a.selectedIndex !== null;
                   case 'fill_in_blank':
-                  case 'code': return a.text.trim().length > 0;
-                  case 'multi_select_issue': return a.selectedIndices.length > 0;
+                  case 'code':
+                    return a.text.trim().length > 0;
+                  case 'multi_select_issue':
+                    return a.selectedIndices.length > 0;
+                  case 'drag_drop':
+                    return 'categories' in a && a.categories.source.length === 0;
+                  default:
+                    return false;
                 }
               })();
               return (
@@ -1037,13 +1163,45 @@ const StudyResources: React.FC<{
       : 'Start by coding a minimal Subject with attach/detach and notify, then layer push and pull models to compare trade-offs.';
 
   return (
-    <div className="border border-slate-200 px-8 py-8">
+  <div className="border border-slate-200 px-8 py-8">
       <CardHeader>
-        <CardTitle className="text-blue-900 text-2xl">🎯 Study Resources & Recommendations</CardTitle>
-        <CardDescription>Targeted links and practice tasks based on your performance.</CardDescription>
+        <CardTitle className="text-blue-900 text-2xl">
+          Study Resources & Recommendations
+        </CardTitle>
+        <CardDescription>
+          Targeted links and practice tasks based on your performance.
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4 text-sm">
+
+      <CardContent className="space-y-6 text-sm">
+
+        {/* === NEW: What to focus on === */}
+        {(() => {
+          const map = new Map<string, number>();
+          questions.forEach(q => {
+            if (!isQuestionCorrect(q, userAnswers[q.id])) {
+              q.learning_objectives.forEach(o => map.set(o, (map.get(o) ?? 0) + 1));
+            }
+          });
+          const top = [...map.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([obj, cnt]) => `${obj} (missed ${cnt}x)`);
+          return top.length > 0 ? (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <p className="font-bold text-orange-800 flex items-center gap-2">
+                <Target className="w-5 h-5" /> What to focus on:
+              </p>
+              <ul className="mt-2 ml-6 list-disc text-orange-700">
+                {top.map((item, i) => <li key={i}>{item}</li>)}
+              </ul>
+            </div>
+          ) : null;
+        })()}
+
+        {/* === Existing recommendation === */}
         <p className="font-medium">{rec}</p>
+
         <div>
           <p className="font-semibold mb-1">Key Resources:</p>
           <ul className="list-disc list-inside space-y-1">
@@ -1063,6 +1221,7 @@ const StudyResources: React.FC<{
             ))}
           </ul>
         </div>
+
         <div>
           <p className="font-semibold mb-1">Practice Ideas:</p>
           <ul className="list-disc list-inside space-y-1">
@@ -1071,6 +1230,7 @@ const StudyResources: React.FC<{
             <li>Add dynamic observer detachment & verify no memory leaks.</li>
           </ul>
         </div>
+
         <div>
           <p className="font-semibold mb-1">Concepts to Reinforce:</p>
           {incorrectObjectives.size ? (

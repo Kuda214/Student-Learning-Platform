@@ -1,5 +1,22 @@
 import React from 'react';
-import { Brain, User, LayoutDashboard, BookOpen, Radio, Eye } from 'lucide-react';
+import { Brain, User, LayoutDashboard, BookOpen, Eye, LogOut } from 'lucide-react';
+
+
+
+const palette = {
+  primary: '#4F46E5',
+  accent: '#ff8800',
+  bg: '#F8FAFC',
+  panel: '#FFFFFF',
+  line: '#E2E8F0',
+  text: '#334155',
+  dim: '#64748B',
+  success: '#10B981',
+  warn: '#F59E0B',
+  danger: '#F43F5E',
+};
+
+
 
 // --- UI Component Mock-up (Button is needed for the menu) ---
 const Button = ({ children, onClick, className = '', size = 'md', disabled = false }) => {
@@ -27,17 +44,17 @@ const Button = ({ children, onClick, className = '', size = 'md', disabled = fal
   );
 };
 
-const MenuBar = ({ mode, setMode }) => {
+const MenuBar = ({ mode, setMode, onLogout }) => {
   return (
     <header className="flex flex-col sm:flex-row justify-between items-center mb-10 py-4 border-b border-gray-200">
       {/* Platform Title / Logo */}
       <h1 className="text-3xl font-extrabold text-blue-800 flex items-center mb-4 sm:mb-0">
-        <Brain className="w-8 h-8 mr-3 text-blue-500" />
+        <Brain size={30} color={palette.primary}/>
         Pattern Learning Platform
       </h1>
 
       {/* Navigation Links */}
-      <nav className="space-x-4 flex">
+      <nav className="space-x-4 flex items-center">
         {/* Dashboard Button */}
         <Button
           onClick={() => setMode('dashboard')}
@@ -77,12 +94,13 @@ const MenuBar = ({ mode, setMode }) => {
           Assessment
         </Button>
 
-        {/* Profile/Settings Icon */}
+        {/* LOGOUT BUTTON */}
         <Button
-          onClick={() => alert('Profile feature coming soon!')}
-          className="text-gray-700 bg-transparent hover:bg-blue-50"
+          onClick={onLogout}
+          className="text-red-600 bg-transparent hover:bg-red-50 flex items-center"
         >
-          <User className="w-6 h-6" />
+          <LogOut className="w-6 h-6 mr-1" />
+          <span className="hidden sm:inline">Logout</span>
         </Button>
       </nav>
     </header>
