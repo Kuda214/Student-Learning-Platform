@@ -36,7 +36,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   if (localUser?.username.toLowerCase() === 'instructor') {
     return <TeacherDashboard onLogout={() => {
       localStorage.clear();
-      window.location.href = '/login';
+      window.location.href = '/';
     }} />;
   }
 
